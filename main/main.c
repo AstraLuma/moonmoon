@@ -21,6 +21,8 @@
 #include "protocol_examples_common.h"
 #include "esp_sntp.h"
 
+#include "moonmoon.h"
+
 static const char *TAG = "moonmoon";
 
 /* Variable holding number of times ESP32 restarted since first boot.
@@ -29,18 +31,6 @@ static const char *TAG = "moonmoon";
  */
 RTC_DATA_ATTR static int boot_count = 0;
 
-static void obtain_time(void);
-static void initialize_sntp(void);
-int moonPhases(int year, int month, int day);
-
-#ifdef CONFIG_SNTP_TIME_SYNC_METHOD_CUSTOM
-void sntp_sync_time(struct timeval *tv)
-{
-   settimeofday(tv, NULL);
-   ESP_LOGI(TAG, "Time is synchronized from custom code");
-   sntp_set_sync_status(SNTP_SYNC_STATUS_COMPLETED);
-}
-#endif
 
 void time_sync_notification_cb(struct timeval *tv)
 {
@@ -52,69 +42,38 @@ void app_main(void)
     ++boot_count;
     ESP_LOGI(TAG, "Boot count: %d", boot_count);
 
-    time_t now;
-    struct tm timeinfo;
-    time(&now);
-    localtime_r(&now, &timeinfo);
-    // Is time set? If not, tm_year will be (1970 - 1900).
-    if (timeinfo.tm_year < (2016 - 1900)) {
-        ESP_LOGI(TAG, "Time is not set yet. Connecting to WiFi and getting time over NTP.");
-        obtain_time();
-        // update 'now' variable with current time
-        time(&now);
-    }
+    // Set up LEDs
+    led_init();
 
-    char strftime_buf[64];
-
-    // Set timezone to Eastern Standard Time and print local time
+    // Set local time to Eastern
     setenv("TZ", "EST5EDT,M3.2.0/2,M11.1.0", 1);
     tzset();
-    localtime_r(&now, &timeinfo);
-    strftime(strftime_buf, sizeof(strftime_buf), "%c", &timeinfo);
-    ESP_LOGI(TAG, "The current date/time in New York is: %s", strftime_buf);
 
-    int phase = moonPhases(timeinfo.tm_year + 1900, timeinfo.tm_mon + 1, timeinfo.tm_mday);
-    ESP_LOGI(TAG, "The current lunar day is: %i", phase);
+    for(;;) {
+        time_t now;
+        struct tm timeinfo;
+        time(&now);
+        localtime_r(&now, &timeinfo);
+        // Is time set? If not, tm_year will be (1970 - 1900).
+        if (timeinfo.tm_year < (2016 - 1900)) {
+            ESP_LOGI(TAG, "Time is not set yet. Connecting to WiFi and getting time over NTP.");
+            obtain_time();
+            // update 'now' variable with current time
+            time(&now);
+        }
 
-    const int deep_sleep_sec = 10;
-    ESP_LOGI(TAG, "Entering deep sleep for %d seconds", deep_sleep_sec);
-    esp_deep_sleep(1000000LL * deep_sleep_sec);
-}
+        char strftime_buf[64];
 
-static void obtain_time(void)
-{
-    ESP_ERROR_CHECK( nvs_flash_init() );
-    ESP_ERROR_CHECK(esp_netif_init());
-    ESP_ERROR_CHECK( esp_event_loop_create_default() );
+        // Set timezone to Eastern Standard Time and print local time
+        localtime_r(&now, &timeinfo);
+        strftime(strftime_buf, sizeof(strftime_buf), "%c", &timeinfo);
+        ESP_LOGI(TAG, "The current date/time in New York is: %s", strftime_buf);
 
-    /* This helper function configures Wi-Fi or Ethernet, as selected in menuconfig.
-     * Read "Establishing Wi-Fi or Ethernet Connection" section in
-     * examples/protocols/README.md for more information about this function.
-     */
-    ESP_ERROR_CHECK(example_connect());
+        int phase = moonPhases(timeinfo.tm_year + 1900, timeinfo.tm_mon + 1, timeinfo.tm_mday);
+        ESP_LOGI(TAG, "The current lunar day is: %i", phase);
 
-    initialize_sntp();
-
-    // wait for time to be set
-    time_t now = 0;
-    struct tm timeinfo = { 0 };
-    int retry = 0;
-    const int retry_count = 10;
-    while (sntp_get_sync_status() == SNTP_SYNC_STATUS_RESET && ++retry < retry_count) {
-        ESP_LOGI(TAG, "Waiting for system time to be set... (%d/%d)", retry, retry_count);
-        vTaskDelay(2000 / portTICK_PERIOD_MS);
+        const int loop_time_sec = 10;
+        ESP_LOGI(TAG, "Waiting for %d seconds", loop_time_sec);
+        vTaskDelay(loop_time_sec * 1000 / portTICK_PERIOD_MS);
     }
-    time(&now);
-    localtime_r(&now, &timeinfo);
-
-    ESP_ERROR_CHECK( example_disconnect() );
-}
-
-static void initialize_sntp(void)
-{
-    ESP_LOGI(TAG, "Initializing SNTP");
-    sntp_setoperatingmode(SNTP_OPMODE_POLL);
-    sntp_setservername(0, "pool.ntp.org");
-    sntp_set_time_sync_notification_cb(time_sync_notification_cb);
-    sntp_init();
 }
