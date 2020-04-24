@@ -2,4 +2,4 @@ container:
   image: espressif/idf
 
 build_task:
-  build_script: idf.py build
+  build_script: /opt/esp/entrypoint.sh idf.py build
