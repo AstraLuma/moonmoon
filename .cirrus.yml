@@ -1,0 +1,5 @@
+container:
+  image: espressif/idf
+
+build_task:
+  build_script: idf.py build
