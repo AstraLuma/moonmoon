@@ -1,7 +1,10 @@
 #include <inttypes.h>
 
 #include "driver/ledc.h"
+#include "esp_log.h"
 #include "esp_err.h"
+
+static const char *TAG = "moon-led";
 
 typedef uint32_t dutycycle_t;
 
@@ -103,6 +106,12 @@ void led_init() {
 /// Updates the state of the LEDs to match the given lunar day
 void set_moon_phase(int phase) {
     int phaseidx = phase % phase_count;
+
+    ESP_LOGI(
+        TAG, "Setting phase %i (%x %x %x %x %x)", phase, 
+        phases[phaseidx][0], phases[phaseidx][1], phases[phaseidx][2],
+        phases[phaseidx][3], phases[phaseidx][4]
+    );
 
     for_channels(ch) {
         ledc_set_duty_and_update(
