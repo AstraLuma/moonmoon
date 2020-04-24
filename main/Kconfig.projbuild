@@ -1,0 +1,33 @@
+menu "Moon Configuration"
+
+    config MOON_ONE_GPIO
+        int "#1 LED GPIO"
+        default 1
+        help
+            GPIO pin for the #1 LED (from the left)
+
+    config MOON_TWO_GPIO
+        int "#2 LED GPIO"
+        default 2
+        help
+            GPIO pin for the #2 LED (from the left)
+
+    config MOON_THREE_GPIO
+        int "#3 LED GPIO"
+        default 3
+        help
+            GPIO pin for the #3 LED (from the left)
+
+    config MOON_FOUR_GPIO
+        int "#4 LED GPIO"
+        default 4
+        help
+            GPIO pin for the #4 LED (from the left)
+
+    config MOON_FIVE_GPIO
+        int "#5 LED GPIO"
+        default 1
+        help
+            GPIO pin for the #5 LED (from the left)
+
+endmenu

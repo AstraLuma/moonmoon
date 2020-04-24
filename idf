@@ -1,0 +1,16 @@
+#!/usr/bin/python3
+import os
+import sys
+
+cmd = [
+    'podman', 'run', '--rm', '-it',
+    '--volume', '.:/project',
+    '--workdir', '/project',
+    '--env', 'LC_ALL=C.UTF-8',
+    # '--userns=host'
+]
+if os.path.exists("/dev/ttyUSB0"):
+    cmd += ['--device=/dev/ttyUSB0']
+cmd += ['espressif/idf', '--', 'idf.py', *sys.argv[1:]]
+
+os.execvp(cmd[0], cmd)
