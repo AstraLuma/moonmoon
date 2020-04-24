@@ -1,5 +1,27 @@
+#include "nvs_flash.h"
+#include "esp_event.h"
+#include "esp_log.h"
+#include "esp_sntp.h"
 
-static void obtain_time(void)
+#include "protocol_examples_common.h"
+
+static const char *TAG = "moontime";
+
+void time_sync_notification_cb(struct timeval *tv)
+{
+    ESP_LOGI(TAG, "Notification of a time synchronization event");
+}
+
+void initialize_sntp(void)
+{
+    ESP_LOGI(TAG, "Initializing SNTP");
+    sntp_setoperatingmode(SNTP_OPMODE_POLL);
+    sntp_setservername(0, "pool.ntp.org");
+    sntp_set_time_sync_notification_cb(time_sync_notification_cb);
+    sntp_init();
+}
+
+void obtain_time(void)
 {
     ESP_ERROR_CHECK( nvs_flash_init() );
     ESP_ERROR_CHECK(esp_netif_init());
@@ -26,13 +48,4 @@ static void obtain_time(void)
     localtime_r(&now, &timeinfo);
 
     ESP_ERROR_CHECK( example_disconnect() );
-}
-
-static void initialize_sntp(void)
-{
-    ESP_LOGI(TAG, "Initializing SNTP");
-    sntp_setoperatingmode(SNTP_OPMODE_POLL);
-    sntp_setservername(0, "pool.ntp.org");
-    sntp_set_time_sync_notification_cb(time_sync_notification_cb);
-    sntp_init();
 }

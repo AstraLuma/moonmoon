@@ -1,5 +1,5 @@
-static void obtain_time(void);
-static void initialize_sntp(void);
+void obtain_time(void);
+
 int moonPhases(int year, int month, int day);
 
 void led_init();
